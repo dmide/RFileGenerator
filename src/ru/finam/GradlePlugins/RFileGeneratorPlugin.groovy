@@ -26,7 +26,7 @@ class RFileGeneratorPlugin implements Plugin<Project> {
         if (System.env.ANDROID_HOME == null) {
             throw new IllegalStateException("System variable ANDROID_HOME not found")
         }
-        t.dependencies.provided = "$ext.androidPackage:$ext.androidName:$ext.androinVersion"
+        t.dependencies.provided = "$ext.androidPackage:$ext.androidName:$ext.androidVersion"
         t.sourceSets.main.java.srcDir = ext.gen
         t.task('generateRFile', type: Exec) << {
             executable = "$System.env.ANDROID_HOME/platform-tools/aapt"
