@@ -2,6 +2,8 @@ package ru.finam.GradlePlugins
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.UnknownDomainObjectException
+import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.tasks.Exec
 
 /**
@@ -21,30 +23,44 @@ class RFileGeneratorPluginExtension {
 
 class RFileGeneratorPlugin implements Plugin<Project> {
     @Override
-    void apply(Project t) {
-        def vars = t.extensions.create("RFileGenerator", RFileGeneratorPluginExtension)
+    void apply(Project p) {
+        def vars = p.extensions.create("RFileGenerator", RFileGeneratorPluginExtension)
         if (System.env.ANDROID_HOME == null) {
             throw new IllegalStateException("System variable ANDROID_HOME not found")
         }
-        t.dependencies {
+        p.dependencies {
             provided "$vars.androidPackage:$vars.androidName:$vars.androidVersion"
         }
-        t.sourceSets {
+        p.sourceSets {
             main {
                 java {
                     srcDir vars.gen
                 }
             }
         }
-        t.task('generateRFile', type: Exec) {
-            executable = "$System.env.ANDROID_HOME/platform-tools/aapt"
-            args = [
+
+
+
+
+        p.task('generateRFile', type: Exec) {
+            def params = [
                     'package', '-v', '-f', '-m',
-                    "-S", t.file(vars.res),
-                    "-J", t.file(vars.gen),
-                    "-M", t.file(vars.manifest),
-                    "-I", t.configurations.provided.find { it.name == "$vars.androidName-${vars.androidVersion}.jar" }
+                    "-J", p.file(vars.gen),
+                    "-M", p.file(vars.manifest),
+                    "-I", p.configurations.provided.find { it.name == "$vars.androidName-${vars.androidVersion}.jar" }
             ]
+
+            getResDirs(p).each {
+                params.add("-S")
+                params.add(it)
+
+                println("add resource dir $it")
+            }
+
+            executable = "$System.env.ANDROID_HOME/platform-tools/aapt"
+
+            args = params
+
             standardOutput = new ByteArrayOutputStream()
 
             ext.output = {
@@ -52,6 +68,37 @@ class RFileGeneratorPlugin implements Plugin<Project> {
             }
         }
 
-        t.compileJava.dependsOn t.generateRFile
+        p.compileJava.dependsOn p.generateRFile
+    }
+
+    Set<File> getResDirs(Project p) {
+        def files = new HashSet<File>()
+        fillResources(files, p)
+        return files
+    }
+
+
+    void fillResources(Set<File> resources, Project p) {
+        println "fill dependency $p"
+        def resourceFile = getProjectResources(p)
+        if (resourceFile != null) {
+            resources.add(resourceFile)
+        }
+        p.configurations.compile.getDependencies().each { dep ->
+            println "check dependency $dep"
+            if (dep instanceof ProjectDependency) {
+                fillResources(resources, dep.getDependencyProject());
+            }
+        }
+
+    }
+
+    File getProjectResources(Project project) {
+        try {
+            def ext = project.getExtensions().getByType(ru.finam.GradlePlugins.RFileGeneratorPluginExtension.class)
+            return project.file(ext.res)
+        } catch (UnknownDomainObjectException e) {
+            it.getDependencyProject()
+        }
     }
 }
