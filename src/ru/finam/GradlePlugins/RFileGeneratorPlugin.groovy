@@ -45,6 +45,7 @@ class RFileGeneratorPlugin implements Plugin<Project> {
         p.task('generateRFile', type: Exec) {
             def params = [
                     'package', '-v', '-f', '-m',
+                    '--auto-add-overlay',
                     "-J", p.file(vars.gen),
                     "-M", p.file(vars.manifest),
                     "-I", p.configurations.provided.find { it.name == "$vars.androidName-${vars.androidVersion}.jar" }
