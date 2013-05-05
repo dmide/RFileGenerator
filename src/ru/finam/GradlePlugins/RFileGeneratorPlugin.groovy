@@ -36,6 +36,7 @@ class RFileGeneratorPlugin implements Plugin<Project> {
         }
 
         p.gradle.taskGraph.whenReady { taskGraph ->
+            p.file(vars.gen).mkdirs()
             p.dependencies {
                 provided "$vars.androidPackage:$vars.androidName:$vars.androidVersion"
             }
