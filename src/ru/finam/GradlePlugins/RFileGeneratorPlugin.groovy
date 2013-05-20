@@ -106,8 +106,7 @@ class RFileGeneratorPlugin implements Plugin<Project> {
     }
 
     static File getProjectResources(Project project) {
-        def plugin = project.getPlugins().findPlugin("RFileGenerator")
-        if (plugin != null) {
+        if (project.getPlugins().hasPlugin("RFileGenerator")) {
             return project.file(plugin.extension.res)
         }
         return null
